@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Code 產生器</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #f7f7f5;
+      --surface:   #ffffff;
+      --border:    #e0ddd6;
+      --border-md: #c8c4bc;
+      --text:      #1a1a18;
+      --text-2:    #6b6860;
+      --text-3:    #a09d99;
+      --accent:    #1a1a18;
+      --danger:    #c0392b;
+      --success:   #1e7e5a;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Noto Sans TC", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 16px 80px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    header h1 {
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+    header p {
+      font-size: 14px;
+      color: var(--text-2);
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+
+    /* Type tabs */
+    .type-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-bottom: 20px;
+    }
+    .type-tab {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 10px 6px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-2);
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .type-tab svg { opacity: 0.55; transition: opacity 0.15s; }
+    .type-tab:hover { background: var(--bg); border-color: var(--border-md); }
+    .type-tab.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .type-tab.active svg { opacity: 1; stroke: #fff; }
+
+    /* Input */
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .input-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-2);
+      letter-spacing: 0.3px;
+    }
+    .input-row {
+      display: flex;
+      gap: 8px;
+    }
+    input[type="text"] {
+      flex: 1;
+      height: 42px;
+      padding: 0 14px;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      outline: none;
+      transition: border-color 0.15s;
+      font-family: inherit;
+    }
+    input[type="text"]:focus { border-color: var(--border-md); background: #fff; }
+    input[type="text"].error { border-color: var(--danger); }
+
+    .btn-gen {
+      height: 42px;
+      padding: 0 18px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #fff;
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.15s, transform 0.1s;
+      font-family: inherit;
+    }
+    .btn-gen:hover { opacity: 0.85; }
+    .btn-gen:active { transform: scale(0.97); }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 20px;
+      margin-bottom: 20px;
+    }
+    .err-msg {
+      font-size: 12px;
+      color: var(--danger);
+      display: none;
+    }
+    .char-count {
+      font-size: 12px;
+      color: var(--text-3);
+      margin-left: auto;
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 0 -28px 24px;
+    }
+
+    /* Preview area */
+    .preview-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .qr-frame {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 220px;
+      height: 220px;
+      position: relative;
+    }
+
+    /* Corner accents */
+    .qr-frame::before,
+    .qr-frame::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border-color: var(--accent);
+      border-style: solid;
+      opacity: 0.25;
+    }
+    .qr-frame::before { top: 8px; left: 8px; border-width: 2px 0 0 2px; border-radius: 3px 0 0 0; }
+    .qr-frame::after  { bottom: 8px; right: 8px; border-width: 0 2px 2px 0; border-radius: 0 0 3px 0; }
+
+    #qr-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-3);
+    }
+    .ph-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 10px);
+      grid-template-rows: repeat(6, 10px);
+      gap: 2px;
+    }
+    .ph-grid span {
+      border-radius: 2px;
+      background: currentColor;
+      opacity: 0.15;
+    }
+    .ph-grid span.h { opacity: 0.35; }
+    .ph-grid span.e { background: transparent; opacity: 0; }
+    #qr-placeholder p { font-size: 11px; }
+
+    #qr-container { display: none; }
+    #qr-container img,
+    #qr-container canvas { display: block; }
+
+    /* Controls row */
+    .controls {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .control-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .control-label {
+      font-size: 12px;
+      color: var(--text-2);
+      white-space: nowrap;
+      min-width: 48px;
+    }
+    select {
+      flex: 1;
+      height: 38px;
+      padding: 0 10px;
+      font-size: 13px;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      outline: none;
+      cursor: pointer;
+      font-family: inherit;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 30px;
+    }
+    select:focus { border-color: var(--border-md); }
+
+    .btn-dl {
+      width: 100%;
+      height: 44px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: opacity 0.15s, transform 0.1s;
+      font-family: inherit;
+      letter-spacing: 0.2px;
+    }
+    .btn-dl:hover { opacity: 0.85; }
+    .btn-dl:active { transform: scale(0.98); }
+    .btn-dl:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .dl-status {
+      text-align: center;
+      font-size: 12px;
+      color: var(--success);
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .dl-status.hidden { visibility: hidden; }
+
+    footer {
+      margin-top: 36px;
+      font-size: 12px;
+      color: var(--text-3);
+      text-align: center;
+    }
+
+    @media (max-width: 480px) {
+      body { padding: 32px 12px 60px; }
+      header h1 { font-size: 22px; }
+      .card { padding: 20px; }
+      .divider { margin: 0 -20px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>QR Code 產生器</h1>
+  <p>網址、電話、數字，一鍵產出可下載的 JPG</p>
+</header>
+
+<div class="card">
+  <!-- Type tabs -->
+  <div class="type-tabs" role="tablist" aria-label="內容類型">
+    <button class="type-tab active" data-type="url" role="tab" aria-selected="true" onclick="setType('url')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      網址
+    </button>
+    <button class="type-tab" data-type="tel" role="tab" aria-selected="false" onclick="setType('tel')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9a16 16 0 0 0 6 6l1.79-1.79a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+      電話
+    </button>
+    <button class="type-tab" data-type="num" role="tab" aria-selected="false" onclick="setType('num')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
+      數字 / 文字
+    </button>
+  </div>
+
+  <!-- Input -->
+  <div class="input-group">
+    <label class="input-label" for="qr-input" id="input-label">輸入網址</label>
+    <div class="input-row">
+      <input type="text" id="qr-input"
+        placeholder="https://example.com"
+        autocomplete="off"
+        autocorrect="off"
+        spellcheck="false"
+        aria-labelledby="input-label"
+        oninput="onInput()"
+      />
+      <button class="btn-gen" onclick="generate()" aria-label="產生 QR Code">產生</button>
+    </div>
+  </div>
+
+  <div class="meta-row">
+    <span class="err-msg" id="err-msg" role="alert"></span>
+    <span class="char-count" id="char-count">0 字元</span>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Preview -->
+  <div class="preview-area">
+    <div class="qr-frame" aria-live="polite" aria-label="QR Code 預覽">
+      <div id="qr-placeholder">
+        <div class="ph-grid" aria-hidden="true">
+          <span class="h"></span><span class="h"></span><span class="h"></span><span class="h"></span><span class="h"></span><span class="e"></span>
+          <span class="h"></span><span class="e"></span><span class="e"></span><span class="e"></span><span class="h"></span><span class="e"></span>
+          <span class="h"></span><span class="e"></span><span class="h"></span><span class="e"></span><span class="h"></span><span class="e"></span>
+          <span class="h"></span><span class="e"></span><span class="e"></span><span class="e"></span><span class="h"></span><span class="e"></span>
+          <span class="h"></span><span class="h"></span><span class="h"></span><span class="h"></span><span class="h"></span><span class="e"></span>
+          <span class="e"></span><span class="e"></span><span class="h"></span><span class="e"></span><span class="h"></span><span class="h"></span>
+        </div>
+        <p>輸入內容後按「產生」</p>
+      </div>
+      <div id="qr-container"></div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <div class="control-row">
+        <span class="control-label">尺寸</span>
+        <select id="size-select" aria-label="下載尺寸">
+          <option value="200">200 × 200 px（預覽）</option>
+          <option value="400" selected>400 × 400 px（標準）</option>
+          <option value="600">600 × 600 px（高解析）</option>
+          <option value="1000">1000 × 1000 px（印刷用）</option>
+        </select>
+      </div>
+
+      <button class="btn-dl" id="dl-btn" onclick="downloadJPG()" disabled aria-label="下載 JPG">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        下載 JPG
+      </button>
+
+      <div class="dl-status hidden" id="dl-status" aria-live="polite">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+        已下載
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>開放原始碼 QR Code 引擎 · 不儲存任何輸入資料</footer>
+
+<script>
+  var currentType = 'url';
+  var lastQRText = '';
+
+  var labels = {
+    url: '輸入網址',
+    tel: '輸入電話號碼',
+    num: '輸入數字或文字'
+  };
+
+  var placeholders = {
+    url: 'https://example.com',
+    tel: '0912-345-678',
+    num: '1234567890'
+  };
+
+  function setType(t) {
+    currentType = t;
+    document.querySelectorAll('.type-tab').forEach(function(b) {
+      var active = b.dataset.type === t;
+      b.classList.toggle('active', active);
+      b.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    var inp = document.getElementById('qr-input');
+    inp.placeholder = placeholders[t];
+    inp.value = '';
+    inp.classList.remove('error');
+    document.getElementById('input-label').textContent = labels[t];
+    document.getElementById('char-count').textContent = '0 字元';
+    hideErr();
+  }
+
+  function onInput() {
+    var val = document.getElementById('qr-input').value;
+    document.getElementById('char-count').textContent = val.length + ' 字元';
+    document.getElementById('qr-input').classList.remove('error');
+    hideErr();
+  }
+
+  function hideErr() {
+    var e = document.getElementById('err-msg');
+    e.style.display = 'none';
+  }
+
+  function showErr(msg) {
+    var e = document.getElementById('err-msg');
+    e.textContent = msg;
+    e.style.display = 'block';
+    document.getElementById('qr-input').classList.add('error');
+  }
+
+  function buildText(raw) {
+    if (currentType === 'url') {
+      if (!/^https?:\/\//i.test(raw) && raw.indexOf('.') !== -1) {
+        return 'https://' + raw;
+      }
+      return raw;
+    }
+    if (currentType === 'tel') {
+      var clean = raw.replace(/[\s\-\(\)]/g, '');
+      return 'tel:' + clean;
+    }
+    return raw;
+  }
+
+  function validate(raw) {
+    if (!raw) { showErr('請先輸入內容'); return false; }
+    if (raw.length > 800) { showErr('內容過長（上限 800 字元）'); return false; }
+    if (currentType === 'url') {
+      var u = /^https?:\/\//i.test(raw) ? raw : 'https://' + raw;
+      try { new URL(u); } catch(e) { showErr('網址格式有誤，請確認包含網域名稱'); return false; }
+    }
+    if (currentType === 'tel') {
+      var d = raw.replace(/[\s\-\(\)\+]/g, '');
+      if (!/^\d{6,15}$/.test(d)) { showErr('電話號碼格式有誤（請輸入 6–15 位數字）'); return false; }
+    }
+    return true;
+  }
+
+  function generate() {
+    var raw = document.getElementById('qr-input').value.trim();
+    if (!validate(raw)) return;
+    var text = buildText(raw);
+    lastQRText = text;
+
+    var container = document.getElementById('qr-container');
+    container.innerHTML = '';
+    document.getElementById('qr-placeholder').style.display = 'none';
+    container.style.display = 'block';
+    document.getElementById('dl-status').classList.add('hidden');
+
+    new QRCode(container, {
+      text: text,
+      width: 180,
+      height: 180,
+      colorDark: '#1a1a18',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H
+    });
+
+    document.getElementById('dl-btn').disabled = false;
+  }
+
+  function downloadJPG() {
+    if (!lastQRText) return;
+    var size = parseInt(document.getElementById('size-select').value);
+    var container = document.getElementById('qr-container');
+    var img = container.querySelector('img');
+    if (!img) return;
+
+    var canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    var ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, size, size);
+
+    var tmpImg = new Image();
+    tmpImg.onload = function() {
+      ctx.drawImage(tmpImg, 0, 0, size, size);
+      var link = document.createElement('a');
+      var slug = lastQRText.replace(/^https?:\/\//, '').replace(/^tel:/, '').replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_').slice(0, 40);
+      link.download = 'qrcode_' + slug + '_' + size + 'px.jpg';
+      link.href = canvas.toDataURL('image/jpeg', 0.95);
+      link.click();
+      var status = document.getElementById('dl-status');
+      status.classList.remove('hidden');
+      setTimeout(function() { status.classList.add('hidden'); }, 3000);
+    };
+    tmpImg.src = img.src;
+  }
+
+  document.getElementById('qr-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') generate();
+  });
+</script>
+
+</body>
+</html>
