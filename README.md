@@ -1,0 +1,2 @@
+# qrcodegeneratorjack
+generate qrcode
