@@ -251,6 +251,40 @@
       }
     }
 
+    .external-tools {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      max-width: 480px;
+      margin-bottom: 18px;
+      font-size: 12px;
+    }
+    .external-tools-label {
+      color: var(--text-3);
+      letter-spacing: 0.2px;
+    }
+    .external-tool-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--text-2);
+      text-decoration: none;
+      padding: 3px 10px;
+      border-radius: 99px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .external-tool-link:hover {
+      border-color: var(--border-md);
+      color: var(--text);
+    }
+    .external-tool-link svg { flex-shrink: 0; opacity: 0.6; }
+    .external-tool-link:hover svg { opacity: 0.9; }
+    .external-tool-arrow { margin-left: -1px; }
+
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -967,6 +1001,15 @@
     </svg>
   </div>
 </header>
+
+<div class="external-tools">
+  <span class="external-tools-label">其他工具</span>
+  <a class="external-tool-link" href="https://removewaterprint.jacklab123.com/" target="_blank" rel="noopener">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg>
+    去浮水印工具
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="external-tool-arrow"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+  </a>
+</div>
 
 <nav class="tool-tabs" role="tablist" aria-label="工具切換">
   <button class="tool-tab active" id="tool-tab-qrcode" role="tab" aria-selected="true" aria-controls="tool-qrcode" onclick="setTool('qrcode')">
