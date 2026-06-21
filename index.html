@@ -528,6 +528,56 @@
       margin-bottom: 5px;
       letter-spacing: 0.2px;
     }
+
+    .utm-field-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
+    .utm-field-header label { margin-bottom: 0; }
+
+    .utm-mode-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 2px 0;
+      font-family: inherit;
+    }
+    .utm-mode-toggle-track {
+      width: 28px;
+      height: 16px;
+      border-radius: 99px;
+      background: var(--border-md);
+      position: relative;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .utm-mode-toggle-thumb {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform 0.15s;
+    }
+    .utm-mode-toggle[aria-checked="true"] .utm-mode-toggle-track { background: var(--accent); }
+    .utm-mode-toggle[aria-checked="true"] .utm-mode-toggle-thumb { transform: translateX(12px); }
+    .utm-mode-toggle-label {
+      font-size: 11px;
+      color: var(--text-3);
+      white-space: nowrap;
+    }
+
+    .utm-custom-input.hidden { display: none; }
+
+    .utm-pills.hidden { display: none; }
+
     .utm-pills {
       display: flex;
       flex-wrap: wrap;
@@ -982,12 +1032,26 @@
     <div class="utm-panel" id="utm-panel">
       <div class="utm-fields">
         <div class="utm-field">
-          <label>來源 utm_source</label>
+          <div class="utm-field-header">
+            <label>來源 utm_source</label>
+            <button type="button" class="utm-mode-toggle" id="source-mode-toggle" role="switch" aria-checked="false" aria-label="切換來源輸入模式" onclick="toggleSourceMode()">
+              <span class="utm-mode-toggle-track"><span class="utm-mode-toggle-thumb"></span></span>
+              <span class="utm-mode-toggle-label" id="source-mode-label">預設按鈕</span>
+            </button>
+          </div>
           <div class="utm-pills" id="utm-source-pills"></div>
+          <input type="text" class="utm-text-input utm-custom-input hidden" id="utm-source-custom" placeholder="自訂來源，例如 podcast" oninput="onSourceCustomInput()" />
         </div>
         <div class="utm-field">
-          <label>媒介 utm_medium</label>
+          <div class="utm-field-header">
+            <label>媒介 utm_medium</label>
+            <button type="button" class="utm-mode-toggle" id="medium-mode-toggle" role="switch" aria-checked="false" aria-label="切換媒介輸入模式" onclick="toggleMediumMode()">
+              <span class="utm-mode-toggle-track"><span class="utm-mode-toggle-thumb"></span></span>
+              <span class="utm-mode-toggle-label" id="medium-mode-label">預設按鈕</span>
+            </button>
+          </div>
           <div class="utm-pills" id="utm-medium-pills"></div>
+          <input type="text" class="utm-text-input utm-custom-input hidden" id="utm-medium-custom" placeholder="自訂媒介，例如 newsletter" oninput="onMediumCustomInput()" />
         </div>
         <div class="utm-field">
           <label>活動名稱 utm_campaign</label>
@@ -1214,7 +1278,11 @@
     source: null,
     medium: null,
     campaign: '',
-    content: ''
+    content: '',
+    sourceMode: 'preset',   // 'preset' | 'custom'
+    mediumMode: 'preset',   // 'preset' | 'custom'
+    sourceCustom: '',
+    mediumCustom: ''
   };
 
   var utmPanelOpen = false;
@@ -1222,6 +1290,61 @@
   function mediumAvailableForSource(medium, source) {
     if (!source) return true;
     return MEDIUM_ALLOWED_SOURCES[medium].indexOf(source) !== -1;
+  }
+
+  function toggleSourceMode() {
+    utmState.sourceMode = (utmState.sourceMode === 'preset') ? 'custom' : 'preset';
+    var btn = document.getElementById('source-mode-toggle');
+    var label = document.getElementById('source-mode-label');
+    var isCustom = utmState.sourceMode === 'custom';
+    btn.setAttribute('aria-checked', isCustom ? 'true' : 'false');
+    label.textContent = isCustom ? '手動輸入' : '預設按鈕';
+
+    document.getElementById('utm-source-pills').classList.toggle('hidden', isCustom);
+    document.getElementById('utm-source-custom').classList.toggle('hidden', !isCustom);
+
+    if (isCustom) {
+      // 切到自訂模式：清掉預設選取，避免兩邊資料打架
+      utmState.source = null;
+      renderSourcePills();
+      renderMediumPills();
+    } else {
+      // 切回預設模式：清掉自訂文字
+      utmState.sourceCustom = '';
+      document.getElementById('utm-source-custom').value = '';
+    }
+    updatePreview();
+  }
+
+  function toggleMediumMode() {
+    utmState.mediumMode = (utmState.mediumMode === 'preset') ? 'custom' : 'preset';
+    var btn = document.getElementById('medium-mode-toggle');
+    var label = document.getElementById('medium-mode-label');
+    var isCustom = utmState.mediumMode === 'custom';
+    btn.setAttribute('aria-checked', isCustom ? 'true' : 'false');
+    label.textContent = isCustom ? '手動輸入' : '預設按鈕';
+
+    document.getElementById('utm-medium-pills').classList.toggle('hidden', isCustom);
+    document.getElementById('utm-medium-custom').classList.toggle('hidden', !isCustom);
+
+    if (isCustom) {
+      utmState.medium = null;
+      renderMediumPills();
+    } else {
+      utmState.mediumCustom = '';
+      document.getElementById('utm-medium-custom').value = '';
+    }
+    updatePreview();
+  }
+
+  function onSourceCustomInput() {
+    utmState.sourceCustom = document.getElementById('utm-source-custom').value;
+    updatePreview();
+  }
+
+  function onMediumCustomInput() {
+    utmState.mediumCustom = document.getElementById('utm-medium-custom').value;
+    updatePreview();
   }
 
   function renderSourcePills() {
@@ -1297,8 +1420,12 @@
 
   function getUtmParams() {
     var params = [];
-    if (utmState.source) params.push(['utm_source', utmState.source.toLowerCase()]);
-    if (utmState.medium) params.push(['utm_medium', utmState.medium.toLowerCase()]);
+
+    var sourceVal = (utmState.sourceMode === 'custom') ? utmState.sourceCustom.trim() : utmState.source;
+    var mediumVal = (utmState.mediumMode === 'custom') ? utmState.mediumCustom.trim() : utmState.medium;
+
+    if (sourceVal) params.push(['utm_source', sourceVal.toLowerCase()]);
+    if (mediumVal) params.push(['utm_medium', mediumVal.toLowerCase()]);
     if (utmState.campaign.trim()) params.push(['utm_campaign', utmState.campaign.trim()]);
     if (utmState.content.trim()) params.push(['utm_content', utmState.content.trim()]);
     return params;
@@ -1324,7 +1451,7 @@
 
     var raw = document.getElementById('qr-input').value.trim();
     var chip = document.getElementById('utm-chip');
-    var hasAnyUtm = utmState.source || utmState.medium || utmState.campaign.trim() || utmState.content.trim();
+    var hasAnyUtm = getUtmParams().length > 0;
     chip.classList.toggle('on', !!hasAnyUtm);
 
     var sortNote = document.getElementById('sortmode-note');
