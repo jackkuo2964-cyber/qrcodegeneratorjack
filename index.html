@@ -265,6 +265,132 @@
       padding-right: 30px;
     }
     select:focus { border-color: var(--border-md); }
+    select:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* UTM panel */
+    .utm-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      padding: 2px 0;
+      user-select: none;
+    }
+    .utm-toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-2);
+      letter-spacing: 0.3px;
+    }
+    .utm-toggle-chip {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-3);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 2px 8px;
+      display: none;
+    }
+    .utm-toggle-chip.on {
+      display: inline-block;
+      color: var(--success);
+      border-color: var(--success);
+      background: #eaf6f1;
+    }
+    .utm-chevron {
+      transition: transform 0.15s;
+      color: var(--text-3);
+    }
+    .utm-chevron.open { transform: rotate(180deg); }
+
+    .utm-panel {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.2s ease;
+    }
+    .utm-panel.open { max-height: 480px; }
+
+    .utm-fields {
+      padding-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .utm-field label {
+      display: block;
+      font-size: 11px;
+      color: var(--text-3);
+      margin-bottom: 5px;
+      letter-spacing: 0.2px;
+    }
+    .utm-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .utm-pill {
+      font-size: 12px;
+      font-weight: 500;
+      padding: 7px 12px;
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      background: var(--bg);
+      color: var(--text-2);
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .utm-pill:hover { border-color: var(--border-md); }
+    .utm-pill.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .utm-pill.disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      text-decoration: line-through;
+    }
+    .utm-pill.disabled:hover { border-color: var(--border); }
+
+    .utm-text-input {
+      height: 38px;
+      width: 100%;
+      padding: 0 12px;
+      font-size: 13px;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      outline: none;
+      font-family: inherit;
+    }
+    .utm-text-input:focus { border-color: var(--border-md); background: #fff; }
+
+    .utm-preview {
+      font-size: 11px;
+      color: var(--text-3);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      word-break: break-all;
+      line-height: 1.6;
+      font-family: ui-monospace, "SF Mono", monospace;
+    }
+    .utm-preview .hl { color: var(--accent); font-weight: 600; }
+    .utm-note {
+      font-size: 11px;
+      color: var(--text-3);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .utm-note.show { display: flex; }
+    .utm-note:not(.show) { display: none; }
 
     .btn-dl {
       width: 100%;
@@ -364,6 +490,46 @@
     <span class="char-count" id="char-count">0 字元</span>
   </div>
 
+  <!-- UTM panel (URL type only) -->
+  <div id="utm-section" style="margin-bottom: 16px;">
+    <div class="utm-toggle" id="utm-toggle-btn" role="button" tabindex="0" aria-expanded="false">
+      <span class="utm-toggle-label">
+        UTM 參數設定
+        <span class="utm-toggle-chip" id="utm-chip">已設定</span>
+      </span>
+      <svg class="utm-chevron" id="utm-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+
+    <div class="utm-panel" id="utm-panel">
+      <div class="utm-fields">
+        <div class="utm-field">
+          <label>來源 utm_source</label>
+          <div class="utm-pills" id="utm-source-pills"></div>
+        </div>
+        <div class="utm-field">
+          <label>媒介 utm_medium</label>
+          <div class="utm-pills" id="utm-medium-pills"></div>
+        </div>
+        <div class="utm-field">
+          <label>活動名稱 utm_campaign</label>
+          <input type="text" class="utm-text-input" id="utm-campaign" placeholder="例如 0619_football_championship" oninput="updatePreview()" />
+        </div>
+        <div class="utm-field">
+          <label>內容 / 素材 utm_content</label>
+          <input type="text" class="utm-text-input" id="utm-content" placeholder="例如 banner_v1" oninput="updatePreview()" />
+        </div>
+        <div class="utm-field">
+          <label>產生後網址</label>
+          <div class="utm-preview" id="utm-preview">尚未設定 UTM 參數</div>
+          <span class="utm-note" id="sortmode-note">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            偵測到 sortMode=Curator，已自動移除
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="divider"></div>
 
   <!-- Preview -->
@@ -426,6 +592,164 @@
     num: '1234567890'
   };
 
+  /* ---------- UTM config ---------- */
+  var SOURCES = ['LINE', 'FB', 'IG', 'THREADS', 'SMS', 'EMAIL'];
+  var ALL_MEDIUMS = ['POST', 'COMMENT', 'STORY', 'REEL'];
+
+  // 各媒介允許的來源白名單
+  var MEDIUM_ALLOWED_SOURCES = {
+    POST:    ['LINE', 'FB', 'IG', 'THREADS'],          // SMS、EMAIL 沒有
+    COMMENT: ['FB', 'IG', 'THREADS'],                    // LINE、SMS、EMAIL 沒有
+    STORY:   ['FB', 'IG'],                                // 限 FB 和 IG
+    REEL:    ['FB', 'IG', 'THREADS']                      // LINE、SMS、EMAIL 沒有
+  };
+
+  var utmState = {
+    source: null,
+    medium: null,
+    campaign: '',
+    content: ''
+  };
+
+  var utmPanelOpen = false;
+
+  function mediumAvailableForSource(medium, source) {
+    if (!source) return true;
+    return MEDIUM_ALLOWED_SOURCES[medium].indexOf(source) !== -1;
+  }
+
+  function renderSourcePills() {
+    var wrap = document.getElementById('utm-source-pills');
+    wrap.innerHTML = '';
+    SOURCES.forEach(function(src) {
+      var pill = document.createElement('button');
+      pill.type = 'button';
+      pill.className = 'utm-pill' + (utmState.source === src ? ' active' : '');
+      pill.textContent = src;
+      pill.onclick = function() { selectSource(src); };
+      wrap.appendChild(pill);
+    });
+  }
+
+  function renderMediumPills() {
+    var wrap = document.getElementById('utm-medium-pills');
+    wrap.innerHTML = '';
+    ALL_MEDIUMS.forEach(function(med) {
+      var available = mediumAvailableForSource(med, utmState.source);
+      var pill = document.createElement('button');
+      pill.type = 'button';
+      var isActive = utmState.medium === med && available;
+      pill.className = 'utm-pill' + (isActive ? ' active' : '') + (!available ? ' disabled' : '');
+      pill.textContent = med;
+      if (available) {
+        pill.onclick = function() { selectMedium(med); };
+      } else {
+        pill.disabled = true;
+      }
+      wrap.appendChild(pill);
+    });
+  }
+
+  function selectSource(src) {
+    utmState.source = (utmState.source === src) ? null : src;
+    // 若目前選的 medium 在新來源下不可用，清掉
+    if (utmState.medium && !mediumAvailableForSource(utmState.medium, utmState.source)) {
+      utmState.medium = null;
+    }
+    renderSourcePills();
+    renderMediumPills();
+    updatePreview();
+  }
+
+  function selectMedium(med) {
+    if (!mediumAvailableForSource(med, utmState.source)) return;
+    utmState.medium = (utmState.medium === med) ? null : med;
+    renderMediumPills();
+    updatePreview();
+  }
+
+  function toggleUtmPanel() {
+    utmPanelOpen = !utmPanelOpen;
+    document.getElementById('utm-panel').classList.toggle('open', utmPanelOpen);
+    document.getElementById('utm-chevron').classList.toggle('open', utmPanelOpen);
+    document.getElementById('utm-toggle-btn').setAttribute('aria-expanded', utmPanelOpen ? 'true' : 'false');
+  }
+
+  function stripSortModeCurator(raw) {
+    // 移除 sortMode=Curator 這一個參數（不管位置、不管前後是否還有其他參數）
+    var result = raw;
+    result = result.replace(/([?&])sortMode=Curator(&|$)/i, function(match, p1, p2) {
+      if (p1 === '?' && p2 === '&') return '?';
+      if (p1 === '?' && p2 === '') return '';
+      if (p1 === '&' && p2 === '&') return '&';
+      return '';
+    });
+    // 收尾：若殘留孤立的 ? 或結尾 &，清掉
+    result = result.replace(/\?$/, '').replace(/&$/, '');
+    return result;
+  }
+
+  function getUtmParams() {
+    var params = [];
+    if (utmState.source) params.push(['utm_source', utmState.source.toLowerCase()]);
+    if (utmState.medium) params.push(['utm_medium', utmState.medium.toLowerCase()]);
+    if (utmState.campaign.trim()) params.push(['utm_campaign', utmState.campaign.trim()]);
+    if (utmState.content.trim()) params.push(['utm_content', utmState.content.trim()]);
+    return params;
+  }
+
+  function applyUtmToUrl(raw) {
+    var hadSortMode = /sortMode=Curator/i.test(raw);
+    var cleaned = stripSortModeCurator(raw);
+    var params = getUtmParams();
+
+    var finalUrl = cleaned;
+    if (params.length > 0) {
+      var sep = cleaned.indexOf('?') === -1 ? '?' : '&';
+      var qs = params.map(function(p) { return p[0] + '=' + encodeURIComponent(p[1]); }).join('&');
+      finalUrl = cleaned + sep + qs;
+    }
+    return { url: finalUrl, hadSortMode: hadSortMode };
+  }
+
+  function updatePreview() {
+    utmState.campaign = document.getElementById('utm-campaign').value;
+    utmState.content = document.getElementById('utm-content').value;
+
+    var raw = document.getElementById('qr-input').value.trim();
+    var chip = document.getElementById('utm-chip');
+    var hasAnyUtm = utmState.source || utmState.medium || utmState.campaign.trim() || utmState.content.trim();
+    chip.classList.toggle('on', !!hasAnyUtm);
+
+    var sortNote = document.getElementById('sortmode-note');
+
+    if (!raw) {
+      document.getElementById('utm-preview').textContent = '尚未輸入網址';
+      sortNote.classList.remove('show');
+      return;
+    }
+
+    var withProtocol = /^https?:\/\//i.test(raw) ? raw : 'https://' + raw;
+    var result = applyUtmToUrl(withProtocol);
+    sortNote.classList.toggle('show', result.hadSortMode);
+
+    var preview = document.getElementById('utm-preview');
+    if (getUtmParams().length === 0 && !result.hadSortMode) {
+      preview.textContent = result.url;
+    } else {
+      // highlight utm 段
+      var qIdx = result.url.indexOf('?');
+      if (qIdx === -1) {
+        preview.textContent = result.url;
+      } else {
+        var base = result.url.slice(0, qIdx + 1);
+        var query = result.url.slice(qIdx + 1);
+        preview.innerHTML = base + '<span class="hl">' + query + '</span>';
+      }
+    }
+  }
+
+  /* ---------- Type switching ---------- */
   function setType(t) {
     currentType = t;
     document.querySelectorAll('.type-tab').forEach(function(b) {
@@ -439,7 +763,9 @@
     inp.classList.remove('error');
     document.getElementById('input-label').textContent = labels[t];
     document.getElementById('char-count').textContent = '0 字元';
+    document.getElementById('utm-section').style.display = (t === 'url') ? 'block' : 'none';
     hideErr();
+    updatePreview();
   }
 
   function onInput() {
@@ -447,6 +773,7 @@
     document.getElementById('char-count').textContent = val.length + ' 字元';
     document.getElementById('qr-input').classList.remove('error');
     hideErr();
+    if (currentType === 'url') updatePreview();
   }
 
   function hideErr() {
@@ -463,10 +790,9 @@
 
   function buildText(raw) {
     if (currentType === 'url') {
-      if (!/^https?:\/\//i.test(raw) && raw.indexOf('.') !== -1) {
-        return 'https://' + raw;
-      }
-      return raw;
+      var withProtocol = /^https?:\/\//i.test(raw) ? raw : 'https://' + raw;
+      var result = applyUtmToUrl(withProtocol);
+      return result.url;
     }
     if (currentType === 'tel') {
       var clean = raw.replace(/[\s\-\(\)]/g, '');
@@ -545,6 +871,14 @@
   document.getElementById('qr-input').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') generate();
   });
+
+  document.getElementById('utm-toggle-btn').addEventListener('click', toggleUtmPanel);
+  document.getElementById('utm-toggle-btn').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleUtmPanel(); }
+  });
+
+  renderSourcePills();
+  renderMediumPills();
 </script>
 
 </body>
